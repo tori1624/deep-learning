@@ -1,3 +1,5 @@
+# https://pseudo-lab.github.io/Tutorial-Book/chapters/object-detection/Ch2-EDA.html
+
 # !git clone https://github.com/Pseudo-Lab/Tutorial-book-Utils
 # !python Tutorial-book-Utils/PL_data_loader.py --data FaceMaskDetection
 # !unzip -q Face\ Mask\ Detection.zip
@@ -63,13 +65,13 @@ def plot_image(img_path, annotation):
     for idx in range(len(annotation["boxes"])):
         xmin, ymin, xmax, ymax = annotation["boxes"][idx]
 
-        if annotation['labels'][idx] == 0 :
+        if annotation['labels'][idx] == 0:
             rect = patches.Rectangle((xmin,ymin),(xmax-xmin),(ymax-ymin),linewidth=1,edgecolor='r',facecolor='none')
         
-        elif annotation['labels'][idx] == 1 :
+        elif annotation['labels'][idx] == 1:
             rect = patches.Rectangle((xmin,ymin),(xmax-xmin),(ymax-ymin),linewidth=1,edgecolor='g',facecolor='none')
             
-        else :
+        else:
             rect = patches.Rectangle((xmin,ymin),(xmax-xmin),(ymax-ymin),linewidth=1,edgecolor='orange',facecolor='none')
 
         ax.add_patch(rect)

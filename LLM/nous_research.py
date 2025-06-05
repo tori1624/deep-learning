@@ -1,34 +1,72 @@
-# app.py
 import streamlit as st
 import requests
 
-
-# --- 기본 설정 ---
+# --- Basic Config ---
 st.set_page_config(page_title="Hermes-3 Chat", layout="centered")
-st.title("💬 Hermes-3 LLaMA 대화형 챗봇")
+st.title("💬 Hermes-3 LLaMA Chatbot")
 
-# --- 세션 상태 초기화 ---
+# --- Initialize Session State ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
+if "api_key_valid" not in st.session_state:
+    st.session_state.api_key_valid = False
 
-# --- 옵션 조절 슬라이더 ---
-st.sidebar.header("🛠️ 모델 옵션")
-temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
-top_p = st.sidebar.slider("Top-p", 0.0, 1.0, 0.9, 0.05)
-max_tokens = st.sidebar.slider("Max Tokens", 50, 1024, 200, 10)
+# --- Hermes API Info ---
+API_URL = "https://inference-api.nousresearch.com/v1/chat/completions"
 
-# --- 사용자 입력 받기 ---
-user_input = st.chat_input("메시지를 입력하세요...")
+# --- Sidebar: API Key ---
+st.sidebar.header("🔑 API Key Configuration")
+user_api_key = st.sidebar.text_input("Enter your API Key", type="password")
 
-if user_input:
-    # 대화 기록에 사용자 메시지 추가
-    st.session_state.messages.append({"role": "user", "content": user_input})
-
-    # Hermes-3 API 요청
-    url = "https://inference-api.nousresearch.com/v1/chat/completions"
+# --- Validate API Key ---
+def validate_api_key(api_key: str) -> bool:
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer {api-key}"
+        "Authorization": f"Bearer {api_key}"
+    }
+    test_data = {
+        "model": "Hermes-3-Llama-3.1-70B",
+        "messages": [{"role": "user", "content": "Hello"}],
+        "max_tokens": 1
+    }
+    try:
+        response = requests.post(API_URL, headers=headers, json=test_data, timeout=5)
+        return response.status_code == 200
+    except:
+        return False
+
+if user_api_key:
+    if user_api_key != st.session_state.api_key:
+        if validate_api_key(user_api_key):
+            st.session_state.api_key = user_api_key
+            st.session_state.api_key_valid = True
+            st.sidebar.success("✅ API key is valid and registered!")
+        else:
+            st.session_state.api_key_valid = False
+            st.sidebar.error("❌ Invalid API key. Please try again.")
+
+# --- Model Option Sliders ---
+st.sidebar.header("🛠️ Model Settings")
+temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
+top_p = st.sidebar.slider("Top-p (Nucleus Sampling)", 0.0, 1.0, 0.9, 0.05)
+max_tokens = st.sidebar.slider("Max Tokens", 50, 1024, 200, 10)
+
+# --- Chat Input (only if valid key) ---
+if st.session_state.api_key_valid:
+    user_input = st.chat_input("Type your message...")
+else:
+    st.info("Please enter a valid API key in the sidebar to start chatting.")
+    user_input = None
+
+# --- Handle User Input ---
+if user_input:
+    st.session_state.messages.append({"role": "user", "content": user_input})
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {st.session_state.api_key}"
     }
     data = {
         "model": "Hermes-3-Llama-3.1-70B",
@@ -38,16 +76,16 @@ if user_input:
         "max_tokens": max_tokens
     }
 
-    with st.spinner("모델이 답변을 생성 중입니다..."):
-        response = requests.post(url, headers=headers, json=data)
+    with st.spinner("Generating response..."):
+        response = requests.post(API_URL, headers=headers, json=data)
 
         if response.status_code == 200:
             reply = response.json()['choices'][0]['message']['content']
             st.session_state.messages.append({"role": "assistant", "content": reply})
         else:
-            st.error("API 요청 실패: " + response.text)
+            st.error("API request failed: " + response.text)
 
-# --- 대화 출력 ---
+# --- Display Chat Messages ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])

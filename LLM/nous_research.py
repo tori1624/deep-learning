@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 
 # --- Basic Config ---
-st.set_page_config(page_title="Hermes-3 Chat", layout="centered")
-st.title("💬 Hermes-3 LLaMA Chatbot")
+st.set_page_config(page_title="Nous Research Chat", layout="centered")
+st.title("💬 Nous Research Chatbot")
 
 # --- Initialize Session State ---
 if "messages" not in st.session_state:
@@ -15,6 +15,14 @@ if "api_key_valid" not in st.session_state:
 
 # --- Hermes API Info ---
 API_URL = "https://inference-api.nousresearch.com/v1/chat/completions"
+
+# --- Model Options ---
+MODEL_OPTIONS = {
+    "Hermes-3-Llama-3.1-70B": "Hermes-3-Llama-3.1-70B",
+    "DeepHermes-3-Llama-3-8B-Preview": "DeepHermes-3-Llama-3-8B-Preview",
+    "DeepHermes-3-Mistral-24B-Preview": "DeepHermes-3-Mistral-24B-Preview",
+    "Hermes-3-Llama-3.1-405B": "Hermes-3-Llama-3.1-405B"
+}
 
 # --- Sidebar: API Key ---
 st.sidebar.header("🔑 API Key Configuration")
@@ -47,7 +55,11 @@ if user_api_key:
             st.session_state.api_key_valid = False
             st.sidebar.error("❌ Invalid API key. Please try again.")
 
-# --- Model Option Sliders ---
+# --- Sidebar: Model Selection and Parameters ---
+st.sidebar.header("🧠 Model Selection")
+selected_model_label = st.sidebar.selectbox("Choose a model", list(MODEL_OPTIONS.keys()))
+selected_model = MODEL_OPTIONS[selected_model_label]
+
 st.sidebar.header("🛠️ Model Settings")
 temperature = st.sidebar.slider("Temperature", 0.0, 1.0, 0.7, 0.05)
 top_p = st.sidebar.slider("Top-p (Nucleus Sampling)", 0.0, 1.0, 0.9, 0.05)
@@ -69,7 +81,7 @@ if user_input:
         "Authorization": f"Bearer {st.session_state.api_key}"
     }
     data = {
-        "model": "Hermes-3-Llama-3.1-70B",
+        "model": selected_model,
         "messages": st.session_state.messages,
         "temperature": temperature,
         "top_p": top_p,
